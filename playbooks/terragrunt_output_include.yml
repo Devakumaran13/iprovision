@@ -1,0 +1,50 @@
+---
+- name: Terragrunt Output Projperties
+  block:
+    - debug:
+        msg: "{{ ch_dir_path }}"
+
+    - name: Execute output command
+      command: terragrunt output {{ output_var_item }}
+      register: rc_output
+      args:
+        chdir: "{{ ch_dir_path }}"
+      loop: "{{ output_var }}"
+      loop_control:
+        loop_var: output_var_item
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default('') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default('') }}"
+        ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+        ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+        ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+        ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+    - name: Get the output into a collection
+      set_fact:
+        output_collection: "{{ output_collection + [ output_collection_item ] }}"
+      loop: "{{ rc_output | json_query(\"results[]\") }}"
+      loop_control:
+        loop_var: output_collection_item
+
+    - name: Get the List of Resource Types
+      set_fact:
+        resource_type: "{{ resource_types | default([]) + [
+          {
+            'uid': item.invocation.module_args.chdir.split('/')[-1].split('-')[-1],
+            'output_properties':
+              {
+                item.output_var_item: item.stdout | regex_replace('[\"\\n,]','') | replace('[','') | replace(']','') | trim
+              }
+          }
+        ] }}"
+      when: item changed
+      with_items: "{{ output_collection | unique }}"
+  
+  rescue:
+    - name: Converting into json
+      template:
+        src: "postback.json.j2"
+        dest: "postback.json"
+    - name: Terragrunt Output Properties failing
+      fail:
+        msg: "Terragrunt Output Properties Failed"

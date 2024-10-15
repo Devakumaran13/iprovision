@@ -1,0 +1,46 @@
+---
+- name: Terragrunt Output Main Block
+  block:
+    - debug:
+        msg: "root folder is: {{ root_folder }}"
+    - name: Get the folders
+      find:
+        paths: "{{ root_folder }}"
+        file_type: "directory"
+      register: objects_keys
+    - name: Empty Arrays
+      set_fact:
+        modules_and_keys: []
+        modules_paths: []
+    - name: Extract the folder with keys
+      set_fact:
+        modules_and_keys: "{{ modules_and_keys + [ item.path.split('/')[-1]] }}"
+        modules_paths: "{{ modules_paths + [item.path] }}"
+      with_items: "{{ objects_keys.files | flatten(levels=1) }}"
+    - set_fact:
+        ch_path_int: "{{ root_folder }}"
+        platform_1: "{{ platform }}"
+    - set_fact:
+      platform_map: "{{ platform_1 + '_output_parameters_map' }}"
+    - name: Run Terragrunt output on all items from the output map
+      include_tasks: "terragrunt_output_include.yml"
+      vars:
+        ch_dir_path: "{{ ch_path_int + '/' + item[1] }}"
+        output_var: "{{ item[0].value }}"
+      with_nested:
+        - "{{ lookup('dict', lookup('vars',platform_map)) }}"
+        - "{{ modules_and_key }}"
+      when:
+        - item[0].key in item[1]
+  vars:
+    modules_paths: []
+    modules_and_keys: []
+    output_collection: []
+  rescue:
+    - name: Converting into json
+      tempalte:
+        src: "postback.json.j2"
+        dest: "postback.json"
+    - name: Terragrunt Output Extract failing
+      fail:
+        msg: "Terragrunt Output Extract Failed"

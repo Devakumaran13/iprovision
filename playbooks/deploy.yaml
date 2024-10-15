@@ -1,0 +1,87 @@
+- name: Apply configuration via localhost
+  hosts: localhost
+
+  tasks:
+  - block: Run the Template Deploy
+    - name: Run the Deploy role
+      include_role:
+        name: iot
+    - set_fact:
+        exec_status: "Deployed"
+
+    environment:
+      ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+      ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+      ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+      ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+    rescue:
+      - name: Setting cost generate to false
+        set_fact:
+          cost_generated: false
+      - name: Setting apply execution exec_status
+        set_fact:
+          exec_status: "Failed"
+          error_msg: "IoT Platform Provisioning Error"
+      - name: Cleanup partially created Resources
+        ignore_error: True
+        shell: "az group delete --name {{ resourceName }}"
+        register: rc_cr_des
+        args:
+          chdir: "{{ ch_path }}"
+        async: 900
+        poll: 30
+      - local_action: copy content="{{ rc_cr_des.stdout }}" dest="log/clenup_output.txt"
+      - name: Converting into json
+        template:
+          src: postback.json.j2
+          dest: postback.json
+      - name: iPro Template Apply failing
+        fail:
+          msg: "iProvisioning Template Create/Update "Failed"
+
+- name: Terragrunt output Execution
+  block:
+      - debug:
+          msg: "ch_path before output: {{ ch_path }}"
+      - name: Run terragrunt output for multiple platforms and regions
+        include_tasks: "terragrunt_output_main.yaml"
+        vars:
+          paltform: "{{ item.platform }}"
+          region: "{{ item.region }}"
+          root_folder: "{{ ch_path }}/{{ platform }}/{{ region }}"
+        with_items: "{{ data }}"
+        when: exec_status == "Deployed"
+      - set_fact:
+          resources_details: "{{ resource_type | unique }}"
+        when: exec_status == "Deployed"
+      - include_vars:
+          file: "{{ lookup('env', 'WORKSPACE') }}/cost/infracost-report.json"
+          name: costs
+        when: exec_status == "Deployed" and cost_generated | bool
+      - name: Setting the infra cost variable
+        set_fact:
+          infra_cost: "{{ costs.totalMonthlyCost | float }}"
+        when: exec_status == "Deployed" and cost_generated | bool
+      - debug:
+          msg: "Infra Cost: {{ infra_cost }}"
+        when: exec_status == "Deployed" and cost_generated | bool
+      - name: Converting into json
+        template:
+          src: postback.json.j2
+          dest: postback.json
+    rescue:
+      - name: Setting output execution status
+        set_fact:
+          exec_status: "Failed"
+          err_msg: "Output or Cost Execution Step Failed!"
+      - name: Converting into json
+        template:
+          src: postback.json.j2
+          dest: postback.json
+      - name: Terragrunt Output failing
+        fail:
+          msg: "iProvisioning Output/Cost Execution Failed"
+  
+
+
+      

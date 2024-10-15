@@ -1,0 +1,111 @@
+---
+- name: Run Terragrunt for multiple platforms
+  hosts: localhost
+  vars:
+    output_dict: []
+    resource_types: []
+    log_level: error
+    exec_status: None
+    err_msg: null
+    resources_details: null
+    log_uri: null
+    report_uri: null
+    cost_uri: null
+    ch_path: "{{ workspace }}/{{ projectName }}/{{ applicationName }}/{{ environmentName }}/{{ provisionCloudInfraname }}"
+    actionName: "{{ actionName }}"
+    infra_cost: 0
+  pre_tasks:
+    - name: Creating log and archive extract directory
+      shell: rm -rf log; mkdir -p log; mkdir -p ~/.ssh
+    - name: Create SSH local keys
+      openssh_keypair:
+        path: "~/.ssh/id_rsa"
+        size: 4096
+        state: present
+
+  collections:
+    - kubernetes.core
+
+  tasks:
+    - debug:
+        msg: "ch_path: {{ ch_path }}"
+    - debug:
+        msg: "actinName: {{ actionName }}"
+    - name: Terragrunt plan execution
+      block:
+        - name: To run an iot role
+          include_role:
+            name: iot
+          when: actionName == "create" or actionName == "update"
+
+        - name: Setting apply execution status
+          set_fact:
+            exec_status: "Deployed"
+            err_msg: "Deployment Successful"
+          when:
+            - actionName == "create" or actionName == "update"
+        - name: Preparing the postback json
+          template:
+            src: postback.json.j2
+            dest: postback.json
+          when:
+            - actionName == "create" or actionName == "update"
+      
+      rescue:
+        - name: Setting apply error status
+          set_fact:
+            exec_status: "Failed"
+            err_msg: "Failed Deployment"
+        - name: Generating postback json
+          template:
+            src: postback.json.j2
+            dest: postback.json
+        - name: ARM Deployment failing
+          fail:
+            msg: "iProvisioning Apply Failed"
+        environment:
+          ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+          ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+          ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+          ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+
+    - name: Terragrunt destroy execution
+      block:
+        - name: To run an iot role
+          include_role:
+            name: iot
+            tasks_from: cleanup
+          when: actionName == "delete"
+
+        - name: Setting destroy execution status
+          set_fact:
+            exec_status: "Deleted"
+            err_msg: "Destroy Completed"
+          when:
+            - actionName == "delete"
+        - name: Preparing the postback json
+          template:
+            src: postback.json.j2
+            dest: postback.json
+          when:
+            - actionName == "delete"d
+      
+      rescue:
+        - name: Setting delete execution status
+          set_fact:
+            exec_status: "Failed"
+            err_msg: "Destroy Operation Failed"
+        - name: Converting into json
+          template:
+            src: postback.json.j2
+            dest: postback.json
+        - name: Terragrunt Delete failing
+          fail:
+            msg: "iProvisioning Delete Failed"
+        environment:
+          ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+          ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+          ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+          ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+
+

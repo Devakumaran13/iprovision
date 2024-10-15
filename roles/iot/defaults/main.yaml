@@ -1,0 +1,47 @@
+location: "{{ data[0].location }}"
+vault_name: "{{ data[0].resourceName }}-vault"
+resourcegroup: "{{ data[0].resourceName }}"
+sku: "standard"
+env: "dev"
+msname: "{{ data[0].msname }}"
+uid: "{{ data[0].uid }}"
+arm_storage_resourcegroup: "iprovision"
+arm_storage_account: "iotdevopscoestorage"
+arm_storage_container: "arm"
+rc_create_failed_status: True
+rc_delete_failed_status: True
+iot_hub: "{{ resourcegroup }}-iot"
+key_vault: "{{ vault_name }}"
+aksname: "{{ resourcegroup }}"
+sqlserver: "{{ resourcegroup }}-sqlserver"
+aksvnet: "{{ aksvnet }}-vnet"
+uri: "https://{{ vault_name }}.vault.azure.net/"
+reader_role: acdd72a7-3385-48ef-bd42-f606fba81ae7
+network_contributor_role: 4d97b98b-1d4f-4787-a291-c67834d212e7
+virtual_machine_contributor: 9980e02c-c2be-4d73-94e8-173b1dc7cf3c
+managed_identity_operator: f1a07417-d97a-45cb-824c-7a7467783830
+storage_blob_data_contributor: ba92f5b4-2d11-453d-a403-e96b0029c9fe
+storageaccount_name: "{{ data[0].resourceName }}sa"
+container_name: "{{ data[0].resourceName }}ca"
+dirname: keystore
+keystore_password: czQ@1S3cur1ty
+key_password: czQ@1S3cur1ty
+key_alias: pasprivatekey
+key_alias_symmetry: passymmetrickey
+distinguished_name: "CN=care@c.devakumaran13@gmail.com,OU=deva,o=deva,L=BLR,ST=KA,C=IN"
+docker_secret_namespace: careplatform
+docker_registry_username: iotdevopscoeregistry
+docker_registry_password: 7+rCKHPtw8M7bZYvPcZfLtWbHdTkSGCC
+docker_secret_name: acrsecret
+docker_registry_url: iotdevopscoeregistry.azurecr.io
+docker_email: admin@care.com
+project_name: careplatform
+acrsecret_name: acrsecret
+server_string: "jdbc:sqlserver://{{ sqlserver }}.database.windows.net:1433"
+authentication: ActiveDirectoryMsi
+loginTimeout: 30
+tag: "6.0"
+namespace: careplatform
+sas_key_name: RootManageSharedAccessKey
+warenusername: abc
+werfenpassword: werfenpassword

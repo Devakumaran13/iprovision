@@ -1,0 +1,112 @@
+{
+    "class": "GraphLinksModel",
+    "nodeDataArray": [
+        {
+            "isGroup": true,
+            "resourcetype": "vpc",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 4569,
+            "key": -4,
+            "group": -2,
+            "region": "us-west-2",
+            "input_properties": {
+                "name": "testvpc",
+                "cidr": "10.0.0.0/16",
+                "public_dedicated_network_acl": false,
+                "private_dedicated_network_acl": false,
+                "inbound_acl_rules": {
+                    "rule_no-100": {
+                        "key": "rule_no-100",
+                        "value": "action-allow"
+                    },
+                    "rule_no-101": {
+                        "key": "rule_no-101",
+                        "value": "action-allow"
+                    }
+                },
+                "outbound_acl_rules": {
+                    "rule_no-100": {
+                        "key": "rule_no-100",
+                        "value": "action-allow"
+                    },
+                    "rule_no-101": {
+                        "key": "rule_no-101",
+                        "value": "action-allow"
+                    }
+                }
+            }
+        },
+        {
+            "isGroup": true,
+            "resourcetype": "region",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 4821,
+            "key": -4,
+            "group": -2,
+            "region": "us-west-2",
+            "input_properties": {
+                "name": "us-west-2"
+            }
+
+        },
+        {
+            "isGroup": true,
+            "resourcetype": "az",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 5736,
+            "key": -1,
+            "group": -4,
+            "region": "us-west-2",
+            "input_properties": {
+                "name": "us-west-2a"
+            }
+
+        },
+        {
+            "isGroup": true,
+            "resourcetype": "subnet",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 51704,
+            "key": -5,
+            "group": -1,
+            "region": "us-west-2",
+            "input_properties": {
+                "name": "firewallSubnet",
+                "type": "private",
+                "cidr": "10.0.3.0/24"
+            }
+
+        },
+        {
+            "isGroup": true,
+            "resourcetype": "subnet",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 4815,
+            "key": -6,
+            "group": -1,
+            "region": "us-west-2",
+            "input_properties": {
+                "name": "publicSubnet",
+                "type": "public",
+                "cidr": "10.0.1.0/24"
+            }
+
+        }
+    ],
+    "linkDataArray": []
+}

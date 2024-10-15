@@ -1,0 +1,19 @@
+{
+    "aws_output_parameters_map": {
+        "ec2-instance": ["public_ip","private_ip","id"]
+        "vpc": ["vpc_id","private_subnets_cidr_blocks","public_subnets_cidr_blocks","private_subnets","public_subnets"],
+        "security-group": ["security_group_id","security_group_vpc_id"],
+        "autoscaling": ["autoscaling_group_id"],
+            "elb": ["elb_dns_name","elb_instances"],
+        "eks": ["cluster_status","cluster_platform_version","aws_auth_configmap_yaml"],
+        "secrets-manager": ["secret_arns"]
+    },
+    "azure_output_parameters_map": {
+        "vnet": ["id", "virtual_network_name"],
+        "iot-hub": ["iothub_id", "identity_principal_id"],
+        "event-hub": ["id"],
+        "event-hub-namespace": ["id"],
+        "waf": ["web_application_firewall_policy_id"],
+        "route-table": ["route_table_id"]
+    }
+}

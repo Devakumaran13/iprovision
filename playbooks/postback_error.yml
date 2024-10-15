@@ -1,0 +1,17 @@
+---
+
+- name: Run Terragrunt for multiple platforms
+  hosts: localhost
+  vars:
+    exec_status: "Aborted"
+    resources_details: "No Resource"
+    report_url: null
+    log_uri: null
+    cost_uri: null
+    infra_cost: 0
+
+  tasks:
+    - name: Converting into json
+      template:
+        src: "postback.json.j2"
+        dest: "postback.json"

@@ -1,0 +1,19 @@
+{
+    "auditLogId": {{ auditLogId }},
+    "customerName": "{{ customerName }}",
+    "projectName": "{{ projectName }}",
+    "provisionCloudInfraname": "{{ provisionCloudInfraname }}",
+    "applicationName": "{{ applicationName }}",
+    "environmentName": "{{ environmentName }}",
+    "actionName": "{{ actionName }}",
+    "exec_status": "{{ }}",
+    "err_msg": "{{ exec_status }}",
+    "report_uri": "{{ report_uri }}",
+    "log_uri": "{{ log_uri }}",
+    "cost_uri": "{{ cost_uri }}",
+    "infra_cost": {{ infra_cost }},
+    "output": { "class": "GraphLinksModel",
+                    "nodeDataArray":
+                        {{ resource_details | to_nice_json }}
+                }
+}

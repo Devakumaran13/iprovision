@@ -1,0 +1,289 @@
+---
+- name: Run Terragrunt for multiple platforms
+  hosts: localhost
+  vars:
+    output_dict: []
+    resource_types: []
+    log_level: error
+    exec_status: None
+    err_msg: null
+    resources_details: null
+    log_uri: null
+    report_uri: null
+    cost_uri: null
+    ch_path: "{{ workspace }}/{{ projectName }}/{{ applicationName }}/{{ environmentName }}/{{ provisionCloudInfraname }}"
+    actionName: "{{ actionName }}"
+    infra_cost: 0
+  pre_tasks:
+    - name: Creating log and archive extract directory
+      shell: rm -rf log; mkdir -p log; mkdir -p ~/.ssh
+    - name: Copying the infracost script to iprovision name folder
+      copy:
+        src: ./brakdown_all.sh
+        dest: "{{ ch_path }}/"
+        mode: 0777
+    - name: Create SSH local keys
+      openssh_keypair:
+        path: "~/.ssh/id_rsa"
+        size: 4096
+        state: present
+    - name: Add cost folder to workspace
+      shell: "mkdir -p {{ lookup('env', 'WORKSPACE') }}/cost/"
+
+  tasks:
+    - name: Provisioning Block
+      block:
+        - debug:
+            msg: "ch_path: {{ ch_path }}"
+        - debug:
+            msg: "actinName: {{ actionName }}"
+        - name: Terragrunt plan execution
+          block:
+            - name: Execute plan execution
+              shell: |
+                terragrunt run-all plan --terragrunt-parallelism 1 -lock=false --terragrunt-log-level {{ log_level }} --terragrunt-debug --terragrunt-provider-cache -no-color -out=infracost-plan
+              register: rc_plan
+              args:
+                chdir: "{{ ch_path }}"
+              when: actionName == "create" or actionName == "update"
+              async: 900
+              poll: 30
+              environment:
+                AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default('') }}"
+                AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default('') }}"
+                ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+                ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+                ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+                ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+
+            - local_action: copy content="{{ rc_plan.stdout }}" dest="log/plan_output.txt"
+              when: actionName == "create" or actionName == "update"
+            - name: Extracting resource updates from plan output
+              shell: line1='grep -n "An execution plan has been generated" log/plan_output.txt | cut -d":" -f1 | head -1';line2='grep -n "\"terraform apply\" is subsequently run" log/plan_output.txt | cut -d":" -f1 | tail -1';if [! -z ${line1}] && [! -z ${line2}]; then sed -n "${line1},${line2}w log/update_report.txt log/plan_output.txt; fi
+              args:
+                creates: log/update_report.txt
+                executable: /bin/bash
+              when: actionName == "create" or actionName == "update"
+
+          rescue:
+            - local_action: copy content="{{ rc_plan.stderr }}" dest="log/plan_err.txt"
+              when: actionName == "create" or actionName == "update"
+            - name: Extracting changes from plan output
+              shell: grep -m1 "Error\|Error\|error" log/plan_err.txt | sed "s/[^[:alnum:]]/ /g" | xargs
+              register: rc_pl_err
+              when: actionName == "create" or actionName == "update"
+            - debug:
+                var: rc_pl_err.stdout_lines
+            - name: Setting apply execution status
+              set_fact:
+                  exec_status: "Failed"
+                  err_msg: "{{ rc_pl_err.stdout_lines | first }}"
+              when: rc_pl_err | length > 0
+            - name: Generating postback json
+              template:
+                src: postback.json.j2
+                dest: postback.json
+            - name: Print the file details
+              shell: for i in $(find $PWD -maxdepth 1 -type d); do echo $i; done
+              register: file_details
+            - debug:
+                var: file_details.stdout_lines
+            - name: Terragrunt create operation
+              fail:
+                msg: "iProvisioning Plan Failed"
+
+        - name: Terragrunt create operation
+          block:
+              - name: Execute apply execution
+                shell: |
+                  terragrunt run-all apply --terragrunt-parallelism 1 -lock=false --terragrunt-log-level {{ log_level }} --terragrunt-debug --terragrunt-non-interactive --terragrunt-provider-cache -no-color
+                register: rc_cr
+                async: 900
+                poll: 30
+                args:
+                  chdir: "{{ ch_path }}"
+                when: actionName == "create" or actionName == "update"
+                environment:
+                  AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default('') }}"
+                  AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default('') }}"
+                  ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+                  ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+                  ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+                  ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+              - debug:
+                  msg: "{{ rc_cr }}"
+              - local_action: copy content="{{ rc_cr.stdout }}" dest="log/create_log.txt"
+                when: actionName == "create" or actionName == "update"
+              - debug:
+                  var: rc_cr.stdout_lines
+                when: actionName == "create" or actionName == "update"
+              - name: Setting apply execution status
+                set_fact:
+                  exec_status: "Deployed"
+                  err_msg: "Deployment Successful"
+                when: actionName == "create" or actionName == "update"
+              - name: Setting the Status message for Create
+                set_fact:
+                  err_msg: "Provisioning Successful"
+                when: actionName == ""create"
+              - name: Setting the Status message when Apply
+                set_fact:
+                  err_msg: "Update Successful"
+                when: actionName == "update"
+              - name: Execute the ifracost script
+                shell: ./brakdown_all.sh
+                args:
+                  chdir: "{{ ch_path }}"
+                when: exec_status == "Deployed"
+                async: 900
+                poll: 30
+                register: shell_out
+                environment:
+                  AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default('') }}"
+                  AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default('') }}"
+                  ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+                  ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+                  ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+                  ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+                  INFRACOST_API_KEY: "hKyyeKt2SqXOLTlixVnIjRMIWoKUtjyL"
+              - debug:
+                  msg: "{{ shell_out.stdout | to_nice_json }}"
+                when: exec_status == ""Deployed"
+              - name: Copying the infracost file to playbooks folder
+                copy:
+                  src: "{{ ch_path }}/infracost-report.html"
+                  dest: "{{ lookup('env', 'WORKSPACE') }}/cost/"
+                when: exec_status == "Deployed"
+              - name: Copying the infracost json file to playbooks folder
+                copy:
+                  src: "{{ ch_path }}/infracost-report.json"
+                  dest: "{{ lookup('env', 'WORKSPACE') }}/cost/"
+                when: exec_status == "Deployed"
+              - name: Setting cost generated to true
+                set_fact:
+                  cost_generated: true
+          rescue:
+                - local_action: copy content="{{ rc_cr.stderr }}" dest="log/create_err.txt"
+                - name: Get the create operation error message
+                  shell: grep -m1 "Error\|Error\|error" log/create_err.txt | sed "s/[^[:alnum:]]/ /g" | xargs;echo "INFO Partial deploymnet if any will be cleanuped up automatically"
+                  register: rc_cr_err
+                - debug:
+                    var: rc_cr_err.stdout_lines
+                - name: Setting cost generated to false
+                  set_fact:
+                    cost_generated: false
+                - name: Setting apply execution status
+                  set_fact:
+                      exec_status: "Failed"
+                      err_msg: "{{ rc_cr_err.stdout_lines | first }}"
+      
+                - name: Converting into json
+                  template:
+                    src: postback.json.j2
+                    dest: postback.json
+                
+                - name: Terragrunt Apply failing
+                  fail:
+                    msg: "iProvisioning Create/Update Failed"
+                  
+        - name: Terragrunt destroy operation
+          block:
+              - name: Execute destroy command for delete operation
+                shell: terragrunt run-all refresh -lock=false --terragrunt-log-level {{ log_level }} --terragrunt-debug --terragrunt-non-interactive -no-color && terragrunt run-all destroy -lock=false --terragrunt-log-level {{ log_level }} --terragrunt-debug --terragrunt-non-interactive -no-color
+                register: rc_des
+                args:
+                  chdir: "{{ ch_path }}"
+                when: actionName == "delete"
+                async: 900
+                poll: 30
+                environment:
+                  AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID | default('') }}"
+                  AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY | default('') }}"
+                  ARM_SUBSCRIPTION_ID: "{{ ARM_SUBSCRIPTION_ID | default('') }}"
+                  ARM_TENANT_ID: "{{ ARM_TENANT_ID | default('') }}"
+                  ARM_CLIENT_ID: "{{ ARM_CLIENT_ID | default('') }}"
+                  ARM_CLIENT_SECRET: "{{ ARM_CLIENT_SECRET | default('') }}"
+
+              - local_action: copy content="{{ rc_des.stdout }}" dest="log/deletey_log.txt"
+                when: actionName == "delete"
+              - debug:
+                  var: rc_des.stdout_lines
+                when: actionName == "delete"
+              - name: Setting destroy execution status
+                set_fact:
+                  exec_status: "Deleted"
+                  err_msg: "Destroy Completed"
+                when: actionName == "delete"
+
+          rescue:
+                - local_action: copy content="{{ rc_des.stderr }}" dest="log/delete_err.txt"
+                - name: Get the delete operation error message
+                  shell: grep -m1 "Error\|Error\|error" log/delete_err.txt | sed "s/[^[:alnum:]]/ /g" | xargs
+                  register: rc_des_err
+                - debug:
+                    var: rc_des_err.stdout_lines
+                - name: Setting delete execution status
+                  set_fact:
+                      exec_status: "Failed"
+                      err_msg: "{{ rc_des_err.stdout_lines | first }}"
+      
+                - name: Converting into json
+                  template:
+                    src: postback.json.j2
+                    dest: postback.json
+                
+                - name: Terragrunt Delete failing
+                  fail:
+                    msg: "iProvisioning Delete Failed"
+
+        - name: Terragrunt output Execution
+          block:
+            - debug:
+                msg: "ch_path before output: {{ ch_path }}"
+            - name: Run terragrunt output for multiple platforms and regions
+              include_tasks: "terragrunt_output_main.yml"
+              vars:
+                platform: "{{ item.platform }}"
+                region: "{{ item.region }}"
+                root_folder: "{{ ch_path }}/{{ platform }}/{{ region }}"
+              with_items: "{{ data }}"
+              when: exec_status == "Deployed"
+            - set_fact:
+                resources_details: "{{ resource_types | unique }}"
+              when: exec_status == "Deployed"
+            - include_vars:
+                file: "{{ lookup('env', 'WORKSPACE') }}/cost/infracost-report.json"
+                name: costs
+              when: exec_status == "Deployed" and cost_generated | bool
+            - name: Setting the infra cost variable
+              set_fact:
+                infra_cost: "{{ costs.totalMonthlyCost | float }}"
+              when: exec_status == "Deployed" and cost_generated | bool
+            - debug:
+                msg: "Infra Cost: {{ infra_cost }}"
+              when: exec_status == "Deployed" and cost_generated | bool
+            - name: Converting into json
+              template:
+                src: postback.json.j2
+                dest: postback.json
+          rescue:
+            - name: Setting output execution status
+              set_fact:
+                exec_status: "Failed"
+                err_msg: "Output or Cost Execution Step Failed!"
+            - name: Converting into json
+              template:
+                src: postback.json.j2
+                dest: postback.json
+            - name: Terragrunt Output failing
+              fail:
+                msg: "iProvisioning Output/Cost Execution Failed"
+
+    
+
+
+              
+
+
+
+      

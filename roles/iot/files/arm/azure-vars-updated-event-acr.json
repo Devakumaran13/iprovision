@@ -1,0 +1,80 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceName": {
+            "type": "String",
+            "metadata": {
+                "description": "The name of the Managed Cluster resource."
+            }
+        },
+        "location": {
+            "type": "String",
+            "metadata": {
+                "description": "The name of the AKS resource."
+            },
+            "defaultValue": "[resourceGroup().location]"
+
+        },
+        "nodeSize": {
+            "defaultValue": "Standard_D4s_v3",
+            "type": "string",
+            "metadata": {
+                "description": "Cluster VM size"
+            }
+        },
+        "kubernetsVersion": {
+            "type": "String",
+            "defaultValue": "1.19.11",
+            "metadata": {
+                "description": "The version of Kubernets."
+            }
+        },
+        "enableRBAC": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": {
+                "description": "Boolean flag to turn on and off of RBAC"
+            }
+        },
+        "vnetName": {
+            "defaultValue": "[concat(parameters('resourceName'), '-vnet')]",
+            "type": "string"
+        },
+        "vnetAddressPrefix": {
+            "defaultValue": "10.61.14.0/23",
+            "type": "string"
+        },
+        "vnetSubnetPrefix": {
+            "defaultValue": "10.61.14.0/24",
+            "type": "string"
+        },
+        "dnsPrefix": {
+            "defaultValue": "[concat(parameters('resourceName'), '-dns')]",
+            "type": "string"
+        },
+        "serviceCidr": {
+            "defaultValue": "10.2.0.0/16",
+            "type": "String",
+            "metadata": {
+                "description": "A CIDR notation IP range from which to assign service cluster IPs."
+            }
+        },
+        "dnsServiceIP": {
+            "defaultValue": "10.2.0.10",
+            "type": "String",
+            "metadata": {
+                "description": "Containers DNS server IP address."
+            }
+        },
+        "docker": {
+            "defaultValue": "10.2.0.0/16",
+            "type": "String",
+            "metadata": {
+                "description": "A CIDR notation IP range from which to assign service cluster IPs."
+            }
+        },
+
+
+    }
+}
