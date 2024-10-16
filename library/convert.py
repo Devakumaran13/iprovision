@@ -19,25 +19,27 @@ class iotData:
         self.location = location
         self.subscription = subscription
         self.resourceName = resourceName
-        self.kubernetsVersion = kubernetsVersion
+        self.kubernetesVersion = kubernetesVersion
         self.vnetAddressPrefix = vnetAddressPrefix
+        self.vnetSubnetPrefix = vnetSubnetPrefix
         self.networkSecurityGroupName = networkSecurityGroupName
         self.vnetName = vnetName
-        self.virtualMachineName =virtualMachineName
-        self.virtualMachineSize =virtualMachineSize
+        self.virtualMachineName = virtualMachineName
+        self.virtualMachineSize = virtualMachineSize
         self.destinationPortRange = destinationPortRange
-        self.isARMTemplate = isARMTemplate
+        self.isARMTemplate = bool(isARMTemplate)
         self.services = services
-        self.aks_uid = aks_uid
+        self.uid = aks_uid
         
-    def conten(self):
+    def content(self):
         return {
             "platform": self.platform,
             "location": self.location,
             "subscription": self.subscription,
             "resourceName": self.resourceName,
-            "kubernetsVersion": self.kubernetsVersion,
+            "kubernetesVersion": self.kubernetesVersion,
             "vnetAddressPrefix": self.vnetAddressPrefix,
+            "vnetSubnetPrefix": self.vnetSubnetPrefix,
             "networkSecurityGroupName": self.networkSecurityGroupName,
             "vnetName": self.vnetName,
             "virtualMachineName": self.virtualMachineName,
@@ -45,13 +47,13 @@ class iotData:
             "destinationPortRange": self.destinationPortRange,
             "isARMTemplate": self.isARMTemplate,
             "msname": self.services,
-            "aks_uid": self.aks_uid
+            "uid": self.aks_uid
         }
 
-class iotCare:
-    def __init__(self, platform, location, subscription, isARMTemplate):
+class iotCore:
+    def __init__(self, platform, region, subscription, isARMTemplate):
         self.platform = platform
-        self.location = location
+        self.region = region
         self.subscription = subscription
         #self.resourceName = resourceName
         #self.kubernetsVersion = kubernetsVersion
@@ -61,14 +63,14 @@ class iotCare:
         #self.virtualMachineName =virtualMachineName
         #self.virtualMachineSize =virtualMachineSize
         #self.destinationPortRange = destinationPortRange
-        self.isARMTemplate = isARMTemplate
+        self.isARMTemplate = bool(isARMTemplate)
         #self.services = services
         #self.aks_uid = aks_uid
         
-    def conten(self):
+    def content(self):
         return {
             "platform": self.platform,
-            "location": self.location,
+            "region": self.region,
             "subscription": self.subscription,
             #"resourceName": self.resourceName,
             #"kubernetsVersion": self.kubernetsVersion,
@@ -113,10 +115,10 @@ class Resource:
         return {
             "uid": self.uid,
             "ref_id": self.ref_id,
-            "type": self.type,
             "platform": self.platform,
-            "region": self.region,
+            "type": self.type,
             "deleted": self.deleted,
+            "region": self.region,
             "input_params": self.input_params,
             "output_params": self.output_params,
             "dependencies": self.dependencies,
@@ -124,10 +126,10 @@ class Resource:
         }
 def random_pet(words=2, separator="-"):
     return petname.generate(words, separator)
-def create_template_data (data, project, application, environment, cloudinfraname):
+def create_template_data(data, project, application, environment, cloudinfraname):
     ansible_input_data = {}
     ansible_input_elements = []
-    services_input = ['metadata', 'security', 'restsql', 'notification', 'ui', 'remoteaccess', 'audit', 'patchmanagement', 'devicemanagement']
+    services_input = ['metadata','security','restsql','notification','ui','remoteaccess','audit','patchmanagement','devicemanagement']
     services_selected = []
     templateName = jmespath.search("templateName", data)
     if len(templateName) > 0:
@@ -136,7 +138,7 @@ def create_template_data (data, project, application, environment, cloudinfranam
             location = jmespath.search("nodeDataArray[?resourcetype=='resource-group'].region", data)
             subscription = jmespath.search("nodeDataArray[?resourcetype=='resource-group'].subscription", data)
             resourceName = jmespath.search("nodeDataArray[?resourcetype=='%s'].name" % ("resource-group"), data)
-            kubernetsVersion = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.kubernetsVersion", data)
+            kubernetesVersion = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.kubernetesVersion", data)
             vnetAddressPrefix = jmespath.search("nodeDataArray[?resourcetype=='vnet'].input_properties.address_space", data)
             vnetName = jmespath.search("nodeDataArray[?resourcetype=='vnet'].input_properties.vnet_name", data)
             vnetSubnetPrefix = jmespath.search("nodeDataArray[?resourcetype=='azsubnet'].input_properties.subnet_prefix", data)
@@ -191,26 +193,26 @@ def create_template_data (data, project, application, environment, cloudinfranam
             print ( location[0] )
             print ( subscription[0] )
             print ( resourceName[0] )
-            print ( kubernetsVersion[0] )
-            print (vnetAddressPrefix[0] )
+            print ( kubernetesVersion[0] )
+            print ( vnetAddressPrefix[0] )
             print ( vnetSubnetPrefix[0] )
             print ( networkSecurityGroupName[0] )
             print ( vnetName[0] )
             print ( virtualMachineName[0] )
             print ( virtualMachineSize[0] )
             print ( destinationPortRange[0] )
-            print ( services_selected[0] )
+            print ( services_selected )
             print ( aks_uid[0] )
-            output_data = iotData (platform[0], location[0], subscription[0], resourceName[0], kubernetsVersion[0], vnetAddressPrefix[0], vnetSubnetPrefix[0], resourceName[0] + "-" + networkSecurityGroupName[0], resourceName[0] + "-" + vnetName[0], resourceName[0] + "-" + virtualMachineName[0], virtualMachineSize[0], destinationPortRange[0], TRUE, services_selected, aks_uid[0])
+            output_data = iotData(platform[0], location[0], subscription[0], resourceName[0], kubernetesVersion[0], vnetAddressPrefix[0], vnetSubnetPrefix[0], resourceName[0] + "-" + networkSecurityGroupName[0], resourceName[0] + "-" + vnetName[0], resourceName[0] + "-" + virtualMachineName[0], virtualMachineSize[0], destinationPortRange[0], TRUE, services_selected, aks_uid[0])
             
             ansible_input_elements.append(output_data.content())
             
             ansible_input_data["data"] = ansible_input_elements
         
         if "careawstest" in templateName:
-            platform = jmespath.search("nodeDataArray[?resourcetype=='resource-group'].platform", data)
-            region = jmespath.search("nodeDataArray[?resourcetype=='resource-group'].region", data)
-            subscription = jmespath.search("nodeDataArray[?resourcetype=='resource-group'].subscription", data)
+            platform = jmespath.search("nodeDataArray[?resourcetype=='region'].platform", data)
+            region = jmespath.search("nodeDataArray[?resourcetype=='region'].region", data)
+            subscription = jmespath.search("nodeDataArray[?resourcetype=='region'].subscription", data)
             #resourceName = jmespath.search("nodeDataArray[?resourcetype=='%s'].name" % ("resource-group"), data)
             #kubernetsVersion = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.kubernetsVersion", data)
             #vnetAddressPrefix = jmespath.search("nodeDataArray[?resourcetype=='vnet'].input_properties.address_space", data)
@@ -457,12 +459,3 @@ def dependencies_in_not_supported(resource_type, dependencies_not_supported):
             return True
         break
     item = item + 1
-                
-            
-            
-                
-            
-            
-            
-            
-                    
