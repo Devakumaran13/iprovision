@@ -35,7 +35,7 @@ def find_templates_files(dir):
     return files
 
 def prepare_common_layer(source_dir_name, platform, region, templates_dir, templates_files):
-    full_dir_name = ("%s%s%s" % (source_dir_name, platform, region)).lower()
+    full_dir_name = ("%s/%s/%s" % (source_dir_name, platform, region)).lower()
     dst_dir = path.join(getcwd(), full_dir_name, WORK_DIR_FOR_COOKIECUTTER)
     common_layer = {
         "platform": platform,
@@ -55,7 +55,7 @@ def prepare_common_layer(source_dir_name, platform, region, templates_dir, templ
             modified.write(data + "\n" + original_data)
             modified.close()
             
-def prepare_common_layer(resource, source_dir_name, platform, region, templates_dir, templates_files):
+def prepare_single_layer(resource, source_dir_name, platform, region, templates_dir, templates_files):
     dir_name = resource.get("dir_name")
     
     interim_dir_name = ("%s%s%s" % (source_dir_name, platform, region)).lower()
@@ -84,13 +84,13 @@ def prepare_common_layer(resource, source_dir_name, platform, region, templates_
         if resource.get("type") == "eks":
             shutil.copy(templates_dir + "/../scripts/init5gcomponents.tpl", dst_dir)
         with open(dst_file, "w") as modified:
-            modified.writ(data + "\n" + original_data)
+            modified.write(data + "\n" + original_data)
             modified.close()
             
     return resource["type"]
    #Copy all files and subdirectories into working directory 
 def copy_to_working_dir(templates_dir, work_dir=""):
-    dst_dir = path.join(working_dir, WORK_DIR_FOR_COOKIECUTTER)
+    dst_dir = path.join(work_dir, WORK_DIR_FOR_COOKIECUTTER)
     
     try:
         pathlib.Path(dst_dir).mkdir(parents=True, exist_ok=True)
@@ -112,8 +112,8 @@ def copy_to_working_dir(templates_dir, work_dir=""):
 
 
 def render_all(extra_context):
-    templates_dir = path.join(tmp_dir, OUTPUT_DIR, WORK_DIR, extra_context["source_name"], extra_context["region"])
-    output_dir = path.join(tmp_dir, OUTPUT_DIR, WORK_DIR, "final", extra_context["source_name"], extra_context["region"])
+    templates_dir = path.join(tmp_dir, OUTPUT_DIR, WORK_DIR, extra_context["source_name"], extra_context["platform"], extra_context["region"])
+    output_dir = path.join(tmp_dir, OUTPUT_DIR, WORK_DIR, "final", extra_context["source_name"], extra_context["platform"], extra_context["region"])
     cookiecutter(templates_dir,
                  config_file=path.join(COOKIECUTTER_TEMPLATES_DIR, "config_aws_lambda.yaml"),
                  overwrite_if_exists=True,
@@ -164,7 +164,7 @@ def recursive_replace_dependency(input, dirs):
         input[key] = recursive_replace_dependency(value, dirs)
     return input
     
-def render_from_json_config(resource, source, platform, region):
+def render_from_json_config(resources, source, platform, region):
 # resources = json.loads(config)
 
 # prepare dir name from source name
@@ -183,7 +183,7 @@ def render_from_json_config(resource, source, platform, region):
         uid = resource.get("uid")
         
         if uid:
-            dirs.update({resource.get("type") + "-" + str(uid): make_dir_name(type=resource.get("type", uid=resource.get("uid")))})
+            dirs.update({resource.get("type") + "-" + str(uid): make_dir_name(type=resource.get("type"), uid=resource.get("uid"))})
             
     # Find all templates for single layer once
     templates_dir = path.realpath(path.join(COOKIECUTTER_TEMPLATES_DIR, "terragrunt-single-layer"))
@@ -219,13 +219,13 @@ def render_from_json_config(resource, source, platform, region):
         
         used_modules.add(used_module_type)
         
-    extra_context = dict({"module_source": {}, "module_registry_urls": {}, "module_variables": {}})
+    extra_context = dict({"module_sources": {}, "module_registry_urls": {}, "module_variables": {}})
     for module_type in used_modules:
         extra_context["module_sources"].update({
             module_type: MODULES[module_type]["source"],
         })
         
-        extra_context["module_registry_url"].update({
+        extra_context["module_registry_urls"].update({
             module_type: MODULES[module_type]["registry_url"],
         })
         
