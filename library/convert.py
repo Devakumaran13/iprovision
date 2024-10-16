@@ -186,7 +186,7 @@ def create_template_data (data, project, application, environment, cloudinfranam
                 if len(metadata) > 0:
                     if metadata[0].lower() == "yes":
                         services_selected.append("metadata")
-                    
+            
             print ( platform[0] )
             print ( location[0] )
             print ( subscription[0] )
@@ -247,7 +247,7 @@ def convert_json_to_config(data, project, application, environment, cloudinfrana
     query = "nodeDataArray[].uid"
     uids = jmespath.search(query, data)
     dependencies_not_supported = ["region", "az", "subnet", "azsubnet"]
-    supported_resource_types = ["ec2-instance", "elb", "security-group", "vpc", "sql-server", "s3-bucket", "autoscaling", "resource-group", "storage-account", "compute", "vnet", "network-sercurity-group", "eks", "aks", "route-table", "route", "vmss"]
+    supported_resource_types = ["ec2-instance", "elb", "security-group", "vpc", "sql-server", "s3-bucket", "autoscaling", "resource-group", "storage-account", "compute", "vnet", "network-sercurity-group", "eks", "aks", "route-table", "route", "vmss", "sns"]
     for uid in uids:
         keys = jmespath.search("nodeDataArray[?uid=='%d'].key" % uid,data)
         key = keys[0]
@@ -351,6 +351,13 @@ def convert_json_to_config(data, project, application, environment, cloudinfrana
                 resource_group_location = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].input_properties.rg_location" % (key, uid), data)
                 r.update_input_params({"resource_group_name": resource_group_name[0], "resource_group_location": resource_group_location[0]})
                 r.update_input_params({"tags": tags})
+            elif "sns" in resource_type:
+                name = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].input_properties.name" % (key, uid), data)
+                fifo_topic = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].input_properties.fifo_topic" % (key, uid), data)
+                subscriptions = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].input_properties.subscriptions" % (key, uid), data)
+                r.update_input_params({"name": name[0], "fifo_topic": fifo_topic[0], "subscriptions": subscriptions[0]})
+                r.update_input_params({"tags": tags})
+            
             elif "storage-account" in resource_type:
                 location = jmespath.search("nodeDataArray[?resourcetype=='storage-account'].region", data)
                 sa_name = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].input_properties.name" % (key, uid), data)
@@ -387,7 +394,7 @@ def convert_json_to_config(data, project, application, environment, cloudinfrana
             else:
                 r.update_input_params(input_properties[0])
                 r.update_input_params({"tags": tags})
-        output_properties = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].output_properties.vmscaleset_name" % (key, uid), data)
+        output_properties = jmespath.search("nodeDataArray[?key=='%d' && uid=='%d'].output_properties" % (key, uid), data)
         if len(output_properties) > 0:
             r.update_output_params(output_properties[0])
         dependencies = []
@@ -405,7 +412,7 @@ def convert_json_to_config(data, project, application, environment, cloudinfrana
                 if ( "ec2" in linked_resource_type[0] and not is_sg_link ) or "subnet" in linked_resource_type[0] or "azsubnet" in linked_resource_type[0] or "autoscaling" in linked_resource_type[0] or "route-table" in linked_resource_type[0] or "az-subnet" in linked_resource_type[0] or "network-security-group" in linked_resource_type[0]:
                     dependencies.append("-" + str(m_uid[0]))
         from_s = jmespath.search("linkDataArray[?from=='%d'].from" % key_other, data)
-        for p in form_s:
+        for p in from_s:
             linked_resource_type = jmespath.search("nodeDataArray[?key=='%d'].resourcetype" % p,data)
             p_uid = jmespath.search("nodeDataArray[?key=='%d'].uid" % p,data)
             if len(linked_resource_type) > 0:
@@ -417,7 +424,7 @@ def convert_json_to_config(data, project, application, environment, cloudinfrana
         group = jmespath.search("nodeDataArray[?key=='%d'].group" % uid_other,data)
         while len(group) > 0:
             group_uid = jmespath.search("nodeDataArray[?key=='%s'].uid" % group[0],data)
-            group_resource_type = jmespath.search("nodeDataArray[?key=='%s'].resourcetype" % group_uid[0],data)
+            group_resource_type = jmespath.search("nodeDataArray[?uid=='%s'].resourcetype" % group_uid[0],data)
             if not dependencies_not_supported(group_resource_type, dependencies_not_supported):
                 dependencies.append("-" + str(group_uid[0]))
             uid_other = group_uid[0]
