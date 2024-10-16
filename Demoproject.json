@@ -1,0 +1,39 @@
+{
+    "class": "GraphLinksModel",
+    "nodeDataArray": [
+        {
+            
+            "isGroup": true,
+            "resourcetype": "region",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 4000,
+            "key": -1,
+            "region": "ap-south-1",
+            "input_properties": {
+                "name": "ap-south-1"
+            }
+
+        },
+        {
+            "resourcetype": "sns",
+            "platform": "aws",
+            "existing": false,
+            "role": "",
+            "subscription": "coeaws_DemoProjectArt",
+            "uid": 4001,
+            "key": -2,
+            "group": -1,
+            "region": "ap-south-1",
+            "input_properties": {
+                "name": "mysnstopic",
+				"fifo_topic": false,
+				"subscriptions": "[{}]"
+            }
+
+        }
+    ],
+    "linkDataArray": []
+}

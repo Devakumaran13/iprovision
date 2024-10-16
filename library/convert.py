@@ -11,7 +11,7 @@ import petname
 import re
 from hashlib import md5
 from pprint import pformat, pprint
-from library.dynamicparams import generate_dynamic_params, generate_dynamic_params_aws, generate_dynamic_parms_gcp, generate_dynamic_parms_azure
+from library.dynamicparams import generate_dynamic_params, generate_dynamic_params_aws, generate_dynamic_params_gcp, generate_dynamic_params_azure
 
 class iotData:
     def __init__(self, platform, location, subscription, resourceName, kubernetsVersion, vnetAddressPrefix, networkSecurityGroupName, vnetName, virtualMachineName, virtualMachineSize, destinationPortRange, isARMTemplate, services, aks_uid):

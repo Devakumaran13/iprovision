@@ -43,7 +43,7 @@ def prepare_common_layer(source_dir_name, platform, region, templates_dir, templ
         "source_name": source_dir_name
     }
     
-    data = '{%- set this = ' + str(common_layer) + ' -%'}'
+    data = '{%- set this = ' + str(common_layer) + ' -%}'
     for item in templates_files:
         part_of_path_to_keep = "".join(item[len(templates_dir):])
         dst_file = dst_dir + part_of_path_to_keep
