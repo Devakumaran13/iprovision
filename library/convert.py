@@ -127,8 +127,8 @@ def random_pet(words=2, separator="-"):
 def create_template_data (data, project, application, environment, cloudinfraname):
     ansible_input_data = {}
     ansible_input_elements = []
-    service_input = ['metadata', 'security', 'restsql', 'notification', 'ui', 'remoteaccess', 'audit', 'patchmanagement', 'devicemanagement']
-    service_selected = []
+    services_input = ['metadata', 'security', 'restsql', 'notification', 'ui', 'remoteaccess', 'audit', 'patchmanagement', 'devicemanagement']
+    services_selected = []
     templateName = jmespath.search("templateName", data)
     if len(templateName) > 0:
         if "iot-platform" in templateName:
@@ -148,45 +148,45 @@ def create_template_data (data, project, application, environment, cloudinfranam
             all_services = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.care_services", data)
             if len(all_services) > 0:
                 if all_services[0].lower() == "yes":
-                    service_selected = services_input
+                    services_selected = services_input
             else:
                 audit = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.audit", data)
                 if len(audit) > 0:
                     if audit[0].lower() == "yes":
-                        service_selected.append("audit")
+                        services_selected.append("audit")
                 restsql = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.restsql", data)
                 if len(restsql) > 0:
                     if restsql[0].lower() == "yes":
-                        service_selected.append("restsql")
+                        services_selected.append("restsql")
                 notification = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.notification", data)
                 if len(notification) > 0:
                     if notification[0].lower() == "yes":
-                        service_selected.append("notification")
+                        services_selected.append("notification")
                 ui = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.ui", data)
                 if len(ui) > 0:
                     if ui[0].lower() == "yes":
-                        service_selected.append("ui")
+                        services_selected.append("ui")
                 remoteaccess = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.remoteaccess", data)
                 if len(remoteaccess) > 0:
                     if remoteaccess[0].lower() == "yes":
-                        service_selected.append("remoteaccess")
+                        services_selected.append("remoteaccess")
                 patchmanagement = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.patchmanagement", data)
                 if len(patchmanagement) > 0:
                     if patchmanagement[0].lower() == "yes":
-                        service_selected.append("patchmanagement")
+                        services_selected.append("patchmanagement")
                 devicemanagement = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.devicemanagement", data)
                 if len(devicemanagement) > 0:
                     if devicemanagement[0].lower() == "yes":
-                        service_selected.append("devicemanagement")
+                        services_selected.append("devicemanagement")
                 security = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.security", data)
                 if len(security) > 0:
                     if security[0].lower() == "yes":
-                        service_selected.append("security")
+                        services_selected.append("security")
                 metadata = jmespath.search("nodeDataArray[?resourcetype=='aks'].input_properties.metadata", data)
                 if len(metadata) > 0:
                     if metadata[0].lower() == "yes":
-                        service_selected.append("metadata")
-            
+                        services_selected.append("metadata")
+                    
             print ( platform[0] )
             print ( location[0] )
             print ( subscription[0] )
@@ -199,9 +199,9 @@ def create_template_data (data, project, application, environment, cloudinfranam
             print ( virtualMachineName[0] )
             print ( virtualMachineSize[0] )
             print ( destinationPortRange[0] )
-            print ( service_selected[0] )
+            print ( services_selected[0] )
             print ( aks_uid[0] )
-            output_data = iotData (platform[0], location[0], subscription[0], resourceName[0], kubernetsVersion[0], vnetAddressPrefix[0], vnetSubnetPrefix[0], resourceName[0] + "-" + networkSecurityGroupName[0], resourceName[0] + "-" + vnetName[0], resourceName[0] + "-" + virtualMachineName[0], virtualMachineSize[0], destinationPortRange[0], TRUE, service_selected, aks_uid[0])
+            output_data = iotData (platform[0], location[0], subscription[0], resourceName[0], kubernetsVersion[0], vnetAddressPrefix[0], vnetSubnetPrefix[0], resourceName[0] + "-" + networkSecurityGroupName[0], resourceName[0] + "-" + vnetName[0], resourceName[0] + "-" + virtualMachineName[0], virtualMachineSize[0], destinationPortRange[0], TRUE, services_selected, aks_uid[0])
             
             ansible_input_elements.append(output_data.content())
             
@@ -247,7 +247,7 @@ def convert_json_to_config(data, project, application, environment, cloudinfrana
     query = "nodeDataArray[].uid"
     uids = jmespath.search(query, data)
     dependencies_not_supported = ["region", "az", "subnet", "azsubnet"]
-    supported_resource_type = ["ec2-instance", "elb", "security-group", "vpc", "sql-server", "s3-bucket", "autoscaling", "resource-group", "storage-account", "compute", "vnet", "network-sercurity-group", "eks", "aks", "route-table", "route", "vmss"]
+    supported_resource_types = ["ec2-instance", "elb", "security-group", "vpc", "sql-server", "s3-bucket", "autoscaling", "resource-group", "storage-account", "compute", "vnet", "network-sercurity-group", "eks", "aks", "route-table", "route", "vmss"]
     for uid in uids:
         keys = jmespath.search("nodeDataArray[?uid=='%d'].key" % uid,data)
         key = keys[0]
