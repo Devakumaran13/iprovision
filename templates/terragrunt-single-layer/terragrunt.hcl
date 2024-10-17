@@ -1,6 +1,6 @@
 {%- set module_source = cookiecutter.module_sources[this.module_type] -%}
 {%- set module_variables = cookiecutter.module_variables[this.module_type] -%}
-{%- set module_registry_url = cookiecutter.module_registry_url[this.module_type] -%}
+{%- set module_registry_url = cookiecutter.module_registry_urls[this.module_type] -%}
 
 locals {
     deleted = {{ this.deleted }}
@@ -10,16 +10,16 @@ terraform {
 }
 
 include {
-    path = find_in_parent_folder()
+    path = find_in_parent_folders()
 }
 
-{% if this.dependencies | default("") -%}
+{% if this.dependencies|default("") -%}
 dependencies {
-    paths = {
+    paths = [
         {%- for value in this.dependencies.split(",") -%}
         "../{{ value }}"{%- if not loop.last -%}, {% endif -%}
         {%- endfor -%}
-    }
+    ]
 }
 
 {% for value in this.dependencies.split(",") -%}
@@ -112,21 +112,21 @@ dependency "{{ value }}" {
 inputs = {
     {% if this.module_type == "ec2-instance" %}
     count = local.deleted ? false : true
-    {% if this.module_type == "ecs" %}
+    {% elif this.module_type == "ecs" %}
     create = local.deleted ? false : true
-    {% if this.module_type == "security-grou" %}
+    {% elif this.module_type == "security-group" %}
     create = local.deleted ? false : true
-    {% if this.module_type == "vpc" %}
+    {% elif this.module_type == "vpc" %}
     create_vpc = local.deleted ? false : true
-    {% if this.module_type == "s3-bucket" %}
+    {% elif this.module_type == "s3-bucket" %}
     create_bucket = local.deleted ? false : true
-    {% if this.module_type == "autoscaling" %}
+    {% elif this.module_type == "autoscaling" %}
     create_asg = local.deleted ? false : true
-    {% if this.module_type == "elb" %}
+    {% elif this.module_type == "elb" %}
     create_elb = local.deleted ? false : true
-    {% if this.module_type == "compute" %}
+    {% elif this.module_type == "compute" %}
     nb_instances = local.deleted ? 0 : 1
-    {% if this.module_type == "eks" %}
+    {% elif this.module_type == "eks" %}
     create = local.deleted ? 0 : 1
     {% endif %}
 
