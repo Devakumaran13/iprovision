@@ -41,10 +41,10 @@ def handler():
     platforms = jmespath.search("nodeDataArray[].platform", json_data)
     platforms = list(set(platforms))
     for platform in platforms:
-        regions = jmespath.search("nodeDataArray[?paltform=='%s'].region" % platform, json_data)
+        regions = jmespath.search("nodeDataArray[?platform==`%s`].region" % platform, json_data)
         regions = list(set(regions))
         for region in regions:
-            subscriptions = jmespath.search("nodeDataArray[?region=='%s' && platform=='%s'].subscription" % (region, platform), json_data)
+            subscriptions = jmespath.search("nodeDataArray[?region==`%s` && platform==`%s`].subscription" % (region, platform), json_data)
             subscriptions = list(set(subscriptions))
             output_data = Data(platform,region,subscriptions[0])
             resources_list = json.loads(config)
@@ -60,7 +60,7 @@ def handler():
     ansible_roles_data["roles"] = ansible_roles
     print(ansible_roles_data)
     
-    aws_regions = jmespath.search("nodeDataArray[?paltform=='aws'].region", json_data)
+    aws_regions = jmespath.search("nodeDataArray[?platform=='aws'].region", json_data)
     aws_regions = list(set(aws_regions))
     
     aws_regions_data = {}
@@ -70,7 +70,7 @@ def handler():
     temp_dir = "archive_work_dir/"
     archive_dir = tmp_dir + "/output/work/" + FINAL_DIR + "/" + sys.argv[2] + "/" + sys.argv[3] + "/" + sys.argv[4] + "/" + sys.argv[5] + "/"
     mkdir_safely(temp_dir)
-    shutil.copytree(archive_dir, temp_dir, ignore= shutil.ignore_patterns(".terra*"), dirs_exist_ok=True)
+    shutil.copytree(archive_dir, temp_dir, ignore = shutil.ignore_patterns(".terra*"), dirs_exist_ok=True)
     
     if not os.environ.get("IS_LOCAL"):
         if os.path.isfile("archive.zip"):
@@ -91,7 +91,7 @@ def handler():
         f.truncate(0)
         f.write(json.dumps(aws_regions_data))
     isARMTemplate = jmespath.search("isARMTemplate", json_data)
-    if isARMTemplate:
+    if isARMTemplate :
         config = create_template_data(json_data, sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         
 logger = setup_logging()
