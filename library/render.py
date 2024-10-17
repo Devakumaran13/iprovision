@@ -58,7 +58,7 @@ def prepare_common_layer(source_dir_name, platform, region, templates_dir, templ
 def prepare_single_layer(resource, source_dir_name, platform, region, templates_dir, templates_files):
     dir_name = resource.get("dir_name")
     
-    interim_dir_name = ("%s%s%s" % (source_dir_name, platform, region)).lower()
+    interim_dir_name = ("%s/%s/%s" % (source_dir_name, platform, region)).lower()
     
     single_layer = {
         "module_type": resource["type"],
@@ -153,7 +153,7 @@ def recursive_replace_dependency(input, dirs):
         items = enumerate(input)
     else:
         #just a value, replace and return
-        found = re.findall(r"dependency\.")
+        found = re.findall(r"dependency\.([^.]+)", str(input))
         for f in found:
             input = re.sub(f, dirs.get(f, f), input)
             
